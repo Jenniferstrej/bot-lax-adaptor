@@ -97,9 +97,10 @@ def call_lax(action, id, version, token, article_json=None, force=False, dry_run
         raise RuntimeError("failed to parse response from lax, expecting json, got error %r from stdout %r" %
                            (err.message, lax_stdout))
 
-def file_handler(path):
-    assert path.startswith(PROJECT_DIR), \
-        "unsafe operation - refusing to read from a file location outside of project root. %r does not start with %r" % (path, PROJECT_DIR)
+def file_handler(path, safe=False):
+    if safe:
+        assert path.startswith(PROJECT_DIR), \
+          "unsafe operation - refusing to read from a file location outside of project root. %r does not start with %r" % (path, PROJECT_DIR)
     xml = open(path, 'r').read()
     # write cache?
     return xml
@@ -271,8 +272,10 @@ def read_from_sqs(stackname='temp'):
     outgoing = sqs_adaptor.OutgoingQueue('bot-lax-%s-out' % stackname)
     return incoming, outgoing
 
-def read_from_fs(path=join(PROJECT_DIR, 'article-xml', 'articles'), **kwargs):
+def read_from_fs(path, **kwargs):
     "generates messages from a directory, writes responses to a log file"
+    if not path: # the cli allows None
+        path = join(PROJECT_DIR, 'article-xml', 'articles')
     kwargs['path'] = path
     incoming = fs_adaptor.IncomingQueue(**kwargs)
     outgoing = fs_adaptor.OutgoingQueue()
@@ -318,6 +321,7 @@ def bootstrap():
     parser.add_argument('--type', choices=['sqs', 'fs'], default='fs')
 
     # fs options
+    parser.add_argument('--dir', default=None)
     parser.add_argument('--force', action='store_true', default=False)
     parser.add_argument('--action', choices=[INGEST, PUBLISH, INGEST_PUBLISH], default=INGEST)
 
@@ -327,7 +331,7 @@ def bootstrap():
     args = parser.parse_args()
 
     adaptors = {
-        'fs': read_from_fs,
+        'fs': partial(read_from_fs, args.dir),
         'sqs': read_from_sqs,
     }
     adaptor_type = args.type
