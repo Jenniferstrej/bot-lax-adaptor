@@ -5,17 +5,17 @@ from pythonjsonlogger import jsonlogger
 ROOTLOG = logging.getLogger("")
 
 _supported_keys = [
-    #'asctime',
-    #'created',
-    'filename',
-    'funcName',
+    'asctime', # formatted 'created' date in ymdhms format
+    'created', # unixtime, can't hurt
+    #'filename', # disabled in preference to 'pathname'
+    'funcName', # combined with 'lineno' and 'pathname', we can unambiguously know origin
     'levelname',
-    #'levelno',
+    #'levelno', # numeric version of 'levelname'
     'lineno',
-    'module',
-    'msecs',
+    #'module', # essentially duplicates 'pathname'
+    #'msecs', # millisecond component
     'message',
-    'name',
+    #'name', # logger name, probably duplicates 'filename'
     'pathname',
     #'process',
     #'processName',
